@@ -193,21 +193,17 @@ export default function Dashboard() {
     try {
       const newPost = await api.createPost(user.id, postContent.trim(), postImage);
       setPostContent("");
-      // Clear any active search so the newly created post is visible immediately
       setSearchTerm("");
       toast.success("Post created");
-      // Optimistically update lists and also reload to ensure consistency
       if (tab === "my") {
         setMyPosts((prev) => [newPost, ...prev]);
-        loadPosts();
       }
       if (tab === "all") {
         setPosts((prev) => [newPost, ...prev]);
-        loadPosts();
       }
-      // clear selected image
       setPostImage(null);
       setPostImagePreview(null);
+      await loadPosts();
     } catch {
       toast.error("Failed to create post");
     }
@@ -278,8 +274,8 @@ export default function Dashboard() {
       setMyPosts((prev) =>
         prev.map((p) => (p.id === postId ? updated : p))
       );
-      if (tab === "all") loadPosts();
-      if (tab === "my") loadPosts();
+      setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)));
+      await loadPosts();
     } catch (error) {
       toast.error(error.message || "Error updating post");
     }
@@ -290,8 +286,9 @@ export default function Dashboard() {
     try {
       await api.deletePost(postId, user.id);
       setMyPosts((prev) => prev.filter((p) => p.id !== postId));
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
       toast.success("Post deleted");
-      if (tab === "all") loadPosts();
+      if (tab === "all") await loadPosts();
     } catch (error) {
       toast.error(error.message || "Error deleting post");
     }
@@ -327,18 +324,11 @@ export default function Dashboard() {
     );
   };
 
-  // Helper to get author name - from users localStorage
-  const getAuthorName = (authorId) => {
-    const users = JSON.parse(localStorage.getItem("sm_users") || "[]");
-    const author = users.find((u) => u.id === authorId);
-    return author ? author.name : "Unknown";
-  };
-
   const filterPosts = (postList) => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return postList;
     return postList.filter((post) =>
-      `${post.content} ${getAuthorName(post.authorId)}`.toLowerCase().includes(query)
+      `${post.content} ${post.authorName}`.toLowerCase().includes(query)
     );
   };
 
@@ -367,7 +357,7 @@ export default function Dashboard() {
                   key={post.id}
                   post={post}
                   canEdit={false}
-                  authorName={getAuthorName(post.authorId)}
+                  authorName={post.authorName}
                   onLike={handleLike}
                   onView={handleView}
                 />

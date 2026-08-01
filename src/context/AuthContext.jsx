@@ -14,9 +14,10 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const loggedInUser = await api.login(email, password);
-      setUser(loggedInUser);
-      localStorage.setItem("user", JSON.stringify(loggedInUser));
+      const response = await api.login(email, password);
+      const userData = { ...response.user, token: response.token };
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
       toast.success("Logged in successfully");
       setLoading(false);
       return true;
@@ -30,9 +31,10 @@ export function AuthProvider({ children }) {
   const signup = async (name, email, password) => {
     setLoading(true);
     try {
-      const newUser = await api.signup(name, email, password);
-      setUser(newUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
+      const response = await api.signup(name, email, password);
+      const userData = { ...response.user, token: response.token };
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
       toast.success("Signed up successfully");
       setLoading(false);
       return true;
